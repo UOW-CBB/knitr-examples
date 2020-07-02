@@ -1,0 +1,90 @@
+\documentclass{article}
+\usepackage[]{graphicx}
+\usepackage[]{color}
+
+\title{Benchmarking ASReml}
+\author{Matthew Berryman}
+\begin{document}
+\maketitle
+
+\section{Setup}
+Here we:
+\begin{enumerate}
+  \item Load the data.
+  \item Load the ASReml library.
+  \item Load the tictoc library for timing sections of R code.
+\end{enumerate}
+
+<<echo=TRUE, cache=TRUE>>=
+load("Lentils19.RData")
+library(tictoc)
+library(asreml)
+@
+
+\section{VM-only call}
+\subsection{Start values}
+Set up the start values through an ASReml call:
+
+<<echo=TRUE, cache=TRUE>>=
+library(asreml)
+lmVM.asr.sv <- asreml(yield ~ Environment + at(Environment):GDrop, 
+                  random = ~ idv(mbf(A)):vm(GKeep, ped19.ainv) + 
+                    diag(Environment):vm(GKeep, ped19.ainv),
+                  mbf = list(A=list(key=c("Environment","Environment"),cov="Lama")),
+                  residual = ~dsum(~ar1(Column):ar1(Row) | Trial), 
+                  data = l19.MET, na.action = na.method(x = "include"), start.values=TRUE)$vparameters.table
+w <- grep("mbf", lmVM.asr.sv$Component)
+lmVM.asr.sv[w, "Value"] <- 1.0
+lmVM.asr.sv[w, "Bound"] <- "F"
+@
+
+\subsection{Main call}
+Uses tic and toc commands to measure walltime.
+
+<<echo=TRUE, cache=TRUE>>=
+tic("main call time just VM, asreml: ")
+lmVM.asr <- asreml(yield ~ Environment + at(Environment):GDrop, 
+                   random = ~ idv(mbf(A)):vm(GKeep, ped19.ainv) + 
+                     diag(Environment):vm(GKeep, ped19.ainv),
+                   mbf = list(A=list(key=c("Environment","Environment"),cov="Lama")),
+                   residual = ~dsum(~ar1(Column):ar1(Row) | Trial), 
+                   G.param = lmVM.asr.sv, R.param = lmVM.asr.sv,
+                   data = l19.MET, na.action = na.method(x = "include"), maxit=1, workspace="8gb")
+toc()
+@
+
+\section{VM + IDE}
+\subsection{Start values}
+Set up the start values through an ASReml call:
+
+<<echo=TRUE, cache=TRUE>>=
+lmVMIDE.asr.sv <- asreml(yield ~ Environment + at(Environment):GDrop, 
+                     random = ~ idv(mbf(A)):vm(GKeep, ped19.ainv) + 
+                       diag(Environment):vm(GKeep, ped19.ainv) + 
+                       idv(mbf(B)):ide(GKeep) + 
+                       diag(Environment):ide(GKeep),
+                     mbf = list(A=list(key=c("Environment","Environment"),cov="Lama"),
+                                B=list(key=c("Environment","Environment"),cov="Lame")),
+                     residual = ~dsum(~ar1(Column):ar1(Row) | Trial), 
+                     data = l19.MET, na.action = na.method(x = "include"), start.values=TRUE)$vparameters.table
+w <- grep("mbf", lmVMIDE.asr.sv$Component)
+lmVMIDE.asr.sv[w, "Value"] <- 1.0
+lmVMIDE.asr.sv[w, "Bound"] <- "F"
+@
+
+\subsection{Main call}
+<<echo=TRUE, cache=TRUE>>=
+tic("main call time VM + IDE, asreml: ")
+lmVMIDE.asr <- asreml(yield ~ Environment + at(Environment):GDrop, 
+                      random = ~ idv(mbf(A)):vm(GKeep, ped19.ainv) + 
+                        diag(Environment):vm(GKeep, ped19.ainv) + 
+                        idv(mbf(B)):ide(GKeep) + 
+                        diag(Environment):ide(GKeep),
+                      mbf = list(A=list(key=c("Environment","Environment"),cov="Lama"),
+                                 B=list(key=c("Environment","Environment"),cov="Lame")),
+                      residual = ~dsum(~ar1(Column):ar1(Row) | Trial), 
+                      G.param = lmVMIDE.asr.sv, R.param = lmVMIDE.asr.sv,
+                      data = l19.MET, na.action = na.method(x = "include"), maxit=1,workspace="8gb")
+toc()
+@
+\end{document}

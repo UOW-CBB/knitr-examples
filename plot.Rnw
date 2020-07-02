@@ -1,0 +1,35 @@
+\documentclass{article}
+\usepackage[]{graphicx}
+\usepackage[]{color}
+\usepackage{listings}
+
+\title{Demo of R in LaTeX}
+\author{Matthew Berryman}
+\begin{document}
+\maketitle
+\section{echo on vs off}
+Here we generate a set of random numbers to demonstrate how it gets included with echo=TRUE, cache=TRUE:
+
+<<echo_true, echo=TRUE, cache=TRUE>>=
+runif(3, min=0, max=100)
+@
+
+with echo=TRUE, cache=FALSE:
+<<cache_false, echo=TRUE, cache=FALSE>>=
+runif(3, min=0, max=100)
+@
+
+and with echo=FALSE
+<<echo_false, echo=FALSE, cache=TRUE>>=
+runif(3, min=0, max=100)
+@
+
+\clearpage
+\section{plotting}
+Here we demo plotting
+<<plot1, echo=FALSE, fig.pos="h", fig.height=3, fig.width=6, fig.cap="First plot">>=
+x <- seq(-pi,pi,0.1)
+plot(x, sin(x))
+@
+
+\end{document}
